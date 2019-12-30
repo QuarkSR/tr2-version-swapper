@@ -2,8 +2,8 @@
 VERIFY ERRORS 2 > NUL
 SETLOCAL EnableDelayedExpansion
 
-REM See https://stackoverflow.com/a/36663349/10466817
-REM Note this gets "tricked" by PowerShell, but that's a fringe use case.
+REM See https://stackoverflow.com/a/36663349/10466817.
+REM This gets "tricked" by PowerShell, but that's a fringe use case.
 IF "%console_mode%" EQU "" (
     SET pause=false
     FOR %%x IN (%cmdcmdline%) DO (
@@ -11,8 +11,9 @@ IF "%console_mode%" EQU "" (
     )
 )
 
-REM Perform housekeeping and load variables.
-CALL :WritePermissionsCheck
+REM See https://stackoverflow.com/a/12264592.
+NET FILE 1>NUL 2>NUL & IF ERRORLEVEL 1 (ECHO You must right-click and select ECHO "RUN AS ADMINISTRATOR"  to run this batch. Exiting... & ECHO. & PAUSE & EXIT /D)
+
 CALL :SetVariables %~1
 CALL :SetDirectories
 IF %verbose% EQU true CALL :PrintDirectories
@@ -33,7 +34,7 @@ FOR /L %%i IN (1,1,%version_count%) DO (
 )
 IF %verbose% EQU true ECHO/
 
-REM Start the script proper
+REM Start the script proper.
 CALL :PrintIntroduction
 REM Get the user's version choice.
 ECHO Version list:
@@ -53,7 +54,7 @@ FOR /L %%i IN (1,1,%file_count%) DO (
 )
 IF %verbose% EQU true ECHO/
 
-REM Copy the game files
+REM Copy the game files.
 XCOPY "!folder[%index%]!" "%target%" /sy || GOTO :CopyError
 ECHO/
 ECHO === Success ===
@@ -63,7 +64,7 @@ ECHO/
 
 REM Copy the patch file if present and desired.
 SET "patch=!patch_folder!\!patch_file!"
-IF %debug% EQU true ECHO Looking for "%patch%".
+IF %debug% EQU true ECHO Looking for "%patch%"...
 IF NOT EXIST "%patch%" (
     REM This is not a terminating GOTO section because the music fix can
     REM still be successfully installed even if the patch cannot.
@@ -118,13 +119,6 @@ EXIT /b 0
 
 
 
-:InsufficientPermissions
-    ECHO The script does not have permissions to write files/folders.
-    ECHO You can try running this script as admin as a workaround,
-    ECHO but most likely the problem is the game install location.
-    CALL :PauseIfNeeded
-    EXIT /b 1
-
 :MissingFolder
     ECHO Could not find a "!version_folder!" version folder with the script.
     GOTO :ReinstallPrompt
@@ -160,17 +154,6 @@ EXIT /b 0
 
 REM The named sections above are used as `GOTO`s and ultimately end the script.
 REM The named sections below are `CALL`ed and used like functions.
-
-
-
-:WritePermissionsCheck
-    COPY NUL foo > NUL
-    IF ERRORLEVEL 1 (
-        GOTO :InsufficientPermissions
-    ) ELSE (
-        DEL foo
-    )
-    EXIT /b 0
 
 :SetVariables
     IF "%~1" EQU "-v" (
@@ -239,7 +222,7 @@ REM The named sections below are `CALL`ed and used like functions.
     EXIT /b 0
 
 :PrintIntroduction
-    ECHO Welcome to the TR2 version swapper script!
+    ECHO Welcome to the TR2 version swapper script! (Version 2.1)
     ECHO This script's code can be viewed/edited with a text editor.
     ECHO The official files with source control can be found here:
     ECHO %git_link%
