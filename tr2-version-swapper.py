@@ -14,7 +14,7 @@ def InsufficientPermissions():
 	print("The script is unable to write files/folders.")
 	print("You can try running it again with sudo as a workaround,")
 	print("but most likely the problem is the game install location.")
-	return 0
+	exit(1)
 
 def SetVariables(verbosity):
 	if verbosity == "-v":
@@ -33,13 +33,14 @@ def SetVariables(verbosity):
 	version_names = ["Multipatch", "Eidos Premier Collection", "Eidos UK Box"]
 	music_files = ["fmodex.dll", "winmm.dll"]
 
-	# Using os.path.join with os.sep ensures cross-platform compatibility.
-	files = ["Tomb2.exe", os.path.join(os.sep, "data", "FLOATING.TR2"),
-			os.path.join(os.sep, "data", "TITLE.PCX"),
-			os.path.join(os.sep, "data", "TOMBPC.DAT")]
+	# os.sep is equal to "\\" on windows platforms, and "/" on posix platforms
+	# This ensures cross-platform compatibility.
+	files = ["Tomb2.exe", f"data{os.sep}FLOATING.TR2", f"data{os.sep}TITLE.PCX",
+			f"data{os.sep}TOMBPC.DAT"]
 
 	patch_file = "Tomb2.exe"
 
+	# Dynamically calculating these numbers for easier future growth.
 	version_count = len(version_names)
 	file_count = len(files)
 	music_file_count = len(music_files)
@@ -59,19 +60,17 @@ def SetVariables(verbosity):
 	return data
 
 def SetDirectories():
-	# os.getcwd() returns an absolute path, not a relative one
 	src = os.getcwd()
-	music_fix = os.path.join(os.sep, src, "utilities", "music_fix")
-	patch_folder = os.path.join(os.sep, src, "utilities", "patch")
+	music_fix = f"{src}{os.sep}utilities{os.sep}music_fix"
+	patch_folder = f"{src}{os.sep}utilities{os.sep}patch"
 	version_folders = []
 
 	os.chdir("..")
 	game_dir = os.getcwd()
 	os.chdir(src)
 
-	for i in range(data.version_count):
-		version_folders.append(os.path.join(os.sep, src, "versions",
-												data.version_names[i]))
+	for i in data.version_names:
+		version_folders.append(f"{src}{os.sep}versions{os.sep}{i}")
 
 	Dirs = namedtuple("Dirs", "src music_fix patch_folder version_folders game_dir")
 	global dirs
@@ -87,8 +86,8 @@ def PrintDirectories():
 	print(f"Patch: {dirs.patch_folder}")
 	print()
 	print("=== Versions ===")
-	for i in dirs.version_folders:
-		print(i.split(os.sep)[-1])
+	for i in data.version_names:
+		print(i)
 
 def MisplacedScript():
 	print("It appears this script was not placed within a TR2 installation root.")
@@ -154,7 +153,7 @@ def CheckMusicFiles(where):
 	# Check the folder has all DLLs.
 	for i in data.music_files:
 		if data.debug:
-			print(f"Looking for {i} in {where}...")
+			print(f"Looking for {i} in {where}..")
 		if not os.path.exists(f"{where}{os.sep}{i}"):
 			print(f"Music fix file not found in {where}.")
 			return False
@@ -163,7 +162,7 @@ def CheckMusicFiles(where):
 		# This f-string adds a leading 0 for one-digit numbers.
 		track = f"{i:02d}.wma"
 		if data.debug:
-			print(f"Looking for music{os.sep}{track} in {where}...")
+			print(f"Looking for music{os.sep}{track} in {where}..")
 		if not os.path.exists(f"{where}{os.sep}music{os.sep}{track}"):
 			print(f"Music fix file not found in {where}.")
 			return False
@@ -206,16 +205,15 @@ for i in range(data.file_count):
 	required_file = data.files[i]
 	if data.debug:
 		print(f"Looking for {required_file} in {dirs.game_dir}...")
-	print(f"Path: {dirs.game_dir}{os.sep}{required_file}")
 	if not os.path.exists(f"{dirs.game_dir}{os.sep}{required_file}"):
 		MisplacedScript()
 	if data.debug:
 		print()
 
 # Check that all version folders are present.
-for i in range(data.version_count):
+for i, j in enumerate(data.version_names):
 	if data.debug:
-		print(f"Looking for {data.version_names[i]} in {os.path.join(os.sep, dirs.game_dir, 'versions')}...")
+		print(f"Looking for {j} in {dirs.game_dir}{os.sep}versions...")
 	if not os.path.exists(dirs.version_folders[i]):
 		MissingFolder(dirs.version_folders[i])
 	if data.verbose:
@@ -237,7 +235,6 @@ print()
 for i in data.files:
 	if data.verbose:
 		print(f"Looking for {i} in {selected_version}...")
-	print(f"Path: versions{os.sep}{selected_version}{os.sep}{i}")
 	if not os.path.exists(f"versions{os.sep}{selected_version}{os.sep}{i}"):
 		MissingFiles(i, selected_version)
 	if data.verbose:
@@ -292,6 +289,7 @@ if selected_version != "Multipatch":
 	music_fix_already_installed = CheckMusicFiles(dirs.game_dir)
 	if not music_fix_already_installed:
 		PrintMusicInfo()
+
 		music_fix_present = CheckMusicFiles(dirs.music_fix)
 		if not music_fix_present:
 			MissingMusicFixFiles()
