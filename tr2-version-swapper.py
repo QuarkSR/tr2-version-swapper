@@ -1,4 +1,4 @@
-  import os, sys, shutil
+import os, sys, shutil
 from collections import namedtuple
 
 def WritePermissionsCheck():
