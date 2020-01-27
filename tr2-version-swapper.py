@@ -9,9 +9,10 @@ def WritePermissionsCheck():
 	try:
 		f = open("foo", "w")
 		os.remove("foo")
-		f.close()
 	except OSError:
 		InsufficientPermissions()
+	finally:
+		f.close()
 
 def InsufficientPermissions():
 	print("The script is unable to write files/folders.")
@@ -188,8 +189,27 @@ def GetMusicInstallChoice():
 	return choice
 
 #-------------------------------------------------------------------------------#
-#--------------------------Check music files------------------------------------#
+#------------------------Check files exist--------------------------------------#
 #-------------------------------------------------------------------------------#
+
+def CheckParentDirectoryFiles():
+	for i in range(data.file_count):
+		required_file = data.files[i]
+		if data.debug:
+			print(f"Looking for {required_file} in {dirs.game_dir}...")
+		if not os.path.exists(f"{dirs.game_dir}{os.sep}{required_file}"):
+			MisplacedScript()
+		if data.debug:
+			print()
+
+def CheckVersionFoldersPresent():
+	for i, j in enumerate(data.version_names):
+		if data.debug:
+			print(f"Looking for {j} in {dirs.game_dir}{os.sep}versions...")
+		if not os.path.exists(dirs.version_folders[i]):
+			MissingFolder(dirs.version_folders[i])
+		if data.verbose:
+			print()
 
 def CheckMusicFiles(where):
 	# Check the folder has all DLLs.
@@ -216,33 +236,17 @@ def CheckMusicFiles(where):
 #-------------------------------------------------------------------------------#
 
 def main():
-	# Perform housekeeping and load variables.
+	# Perform environment check and load variables.
 	WritePermissionsCheck()
 	data = SetVariables(sys.argv[-1])
 	dirs = SetDirectories()
+
+	CheckParentDirectoryFiles()
+	CheckVersionFoldersPresent()
+	
 	if data.verbose:
 		PrintDirectories()
 
-	# Check that the parent directory has all the game files.
-	for i in range(data.file_count):
-		required_file = data.files[i]
-		if data.debug:
-			print(f"Looking for {required_file} in {dirs.game_dir}...")
-		if not os.path.exists(f"{dirs.game_dir}{os.sep}{required_file}"):
-			MisplacedScript()
-		if data.debug:
-			print()
-
-	# Check that all version folders are present.
-	for i, j in enumerate(data.version_names):
-		if data.debug:
-			print(f"Looking for {j} in {dirs.game_dir}{os.sep}versions...")
-		if not os.path.exists(dirs.version_folders[i]):
-			MissingFolder(dirs.version_folders[i])
-		if data.verbose:
-			print()
-
-	# Start the script proper
 	PrintIntroduction()
 
 	# Get the user's version choice.
