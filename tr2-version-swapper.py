@@ -9,10 +9,9 @@ def WritePermissionsCheck():
 	try:
 		f = open("foo", "w")
 		os.remove("foo")
+		f.close()
 	except OSError:
 		InsufficientPermissions()
-	finally:
-		f.close()
 
 def InsufficientPermissions():
 	print("The script is unable to write files/folders.")
