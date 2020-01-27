@@ -9,14 +9,13 @@ def WritePermissionsCheck():
 	try:
 		f = open("foo", "w")
 		os.remove("foo")
+		f.close()
 	except OSError:
 		InsufficientPermissions()
-	finally:
-		f.close()
 
 def InsufficientPermissions():
 	print("The script is unable to write files/folders.")
-	print("You can try running it again with sudo as a workaround,")
+	print("You can try running it again with admin (or root) privileges as a workaround,")
 	print("but most likely the problem is the game install location.")
 	exit(1)
 
@@ -52,19 +51,19 @@ def ReinstallPrompt():
 def SetVariables(verbosity):
 	if verbosity == "-v":
 		verbose = True
-		debug = False
+		debug   = False
 	elif verbosity == "-d":
 		verbose = True
-		debug = True
+		debug   = True
 	else:
 		verbose = False
-		debug = False
+		debug   = False
 
-	git_link = "https://github.com/TombRunners/tr2-version-swapper"
+	git_link     = "https://github.com/TombRunners/tr2-version-swapper"
 	install_link = "https://github.com/TombRunners/tr2-version-swapper/releases/latest"
 
 	version_names = ["Multipatch", "Eidos Premier Collection", "Eidos UK Box"]
-	music_files = ["fmodex.dll", "winmm.dll"]
+	music_files   = ["fmodex.dll", "winmm.dll"]
 
 	# os.sep is equal to "\\" on windows platforms, and "/" on posix platforms
 	# This ensures cross-platform compatibility.
@@ -74,9 +73,9 @@ def SetVariables(verbosity):
 	patch_file = "Tomb2.exe"
 
 	# Dynamically calculating these numbers for easier future growth.
-	version_count = len(version_names)
-	file_count = len(files)
-	music_file_count = len(music_files)
+	version_count     = len(version_names)
+	file_count        = len(files)
+	music_file_count  = len(music_files)
 	music_track_count = 61
 
 	# construct new namedtuple
@@ -93,9 +92,9 @@ def SetVariables(verbosity):
 	return data
 
 def SetDirectories():
-	src = os.getcwd()
-	music_fix = f"{src}{os.sep}utilities{os.sep}music_fix"
-	patch_folder = f"{src}{os.sep}utilities{os.sep}patch"
+	src             = os.getcwd()
+	music_fix       = f"{src}{os.sep}utilities{os.sep}music_fix"
+	patch_folder    = f"{src}{os.sep}utilities{os.sep}patch"
 	version_folders = []
 
 	os.chdir("..")
@@ -125,6 +124,8 @@ def PrintDirectories():
 	print("=== Versions ===")
 	for i in data.version_names:
 		print(i)
+	print("================")
+	print()
 
 def PrintIntroduction():
 	print("Welcome to the TR2 version swapper script!")
@@ -140,7 +141,6 @@ def PrintIntroduction():
 	print("sure to leave the script and the accompanying game files untouched.")
 	print("================")
 	print()
-	return 0
 
 def PrintMusicInfo():
 	print("You switched to a non-Multipatch version. You may find that music no")
@@ -238,15 +238,17 @@ def CheckMusicFiles(where):
 def main():
 	# Perform environment check and load variables.
 	WritePermissionsCheck()
+
 	data = SetVariables(sys.argv[-1])
 	dirs = SetDirectories()
 
 	CheckParentDirectoryFiles()
 	CheckVersionFoldersPresent()
-	
+
 	if data.verbose:
 		PrintDirectories()
 
+	# Start the script proper.
 	PrintIntroduction()
 
 	# Get the user's version choice.
@@ -274,13 +276,13 @@ def main():
 	os.remove(f"{dirs.game_dir}{os.sep}data{os.sep}TOMBPC.DAT")
 
 	shutil.copy(f"versions{os.sep}{selected_version}{os.sep}Tomb2.exe",
-			f"{dirs.game_dir}{os.sep}Tomb2.exe")
+				f"{dirs.game_dir}{os.sep}Tomb2.exe")
 	shutil.copy(f"versions{os.sep}{selected_version}{os.sep}data{os.sep}FLOATING.TR2",
-			f"{dirs.game_dir}{os.sep}data{os.sep}FLOATING.TR2")
+				f"{dirs.game_dir}{os.sep}data{os.sep}FLOATING.TR2")
 	shutil.copy(f"versions{os.sep}{selected_version}{os.sep}data{os.sep}TITLE.PCX",
-			f"{dirs.game_dir}{os.sep}data{os.sep}TITLE.PCX")
+				f"{dirs.game_dir}{os.sep}data{os.sep}TITLE.PCX")
 	shutil.copy(f"versions{os.sep}{selected_version}{os.sep}data{os.sep}TOMBPC.DAT",
-			f"{dirs.game_dir}{os.sep}data{os.sep}TOMBPC.DAT")
+				f"{dirs.game_dir}{os.sep}data{os.sep}TOMBPC.DAT")
 
 	print()
 	print("=== Success ===")
@@ -314,15 +316,21 @@ def main():
 	# Copy the music files if applicable and desired.
 	if selected_version != "Multipatch":
 		music_fix_already_installed = CheckMusicFiles(dirs.game_dir)
-		if not music_fix_already_installed:
-			PrintMusicInfo()
 
+		if music_fix_already_installed:
+			print("The music fix appears to be already installed.")
+			print()
+		else:
+			PrintMusicInfo()
 			music_fix_present = CheckMusicFiles(dirs.music_fix)
 			if not music_fix_present:
 				MissingMusicFixFiles()
 
 			install_music_fix = GetMusicInstallChoice()
-			if install_music_fix == 1:
+
+			if not install_music_fix:
+				print("Skipping music fix installation...")
+			else:
 				try:
 					os.remove(f"{dirs.game_dir}{os.sep}fmodex.dll")
 					os.remove(f"{dirs.game_dir}{os.sep}winmm.dll")
@@ -333,23 +341,19 @@ def main():
 					pass
 
 				shutil.copy(f"utilities{os.sep}music_fix{os.sep}fmodex.dll",
-						f"{dirs.game_dir}")
+							f"{dirs.game_dir}")
 				shutil.copy(f"utilities{os.sep}music_fix{os.sep}winmm.dll",
-						f"{dirs.game_dir}")
+							f"{dirs.game_dir}")
 				for i in range(1, data.music_track_count+1):
 					shutil.copy(f"utilities{os.sep}music_fix{os.sep}music{os.sep}{i:02d}.wma",
-							f"{dirs.game_dir}{os.sep}music{os.sep}{i:02d}.wma")
+								f"{dirs.game_dir}{os.sep}music{os.sep}{i:02d}.wma")
+
 				print()
 				print("=== Success ===")
 				print("Music fix successfully installed. No need to uninstall or")
 				print("modify the relevant files for any future version switch.")
 				print("===============")
 				print()
-			else:
-				print("Skipping music fix installation...")
-		else:
-			print("The music fix appears to be already installed.")
-			print()
 
 	print("Run this script again anytime you wish to change or patch the version.")
 	exit(0)
